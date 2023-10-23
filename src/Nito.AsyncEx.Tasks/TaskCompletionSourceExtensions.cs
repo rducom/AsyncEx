@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Nito.AsyncEx.Synchronous;
 
@@ -25,7 +26,7 @@ namespace Nito.AsyncEx
                 throw new ArgumentNullException(nameof(task));
 
             if (task.IsFaulted)
-                return @this.TrySetException(task.Exception.InnerExceptions);
+                return @this.TrySetException(task.Exception?.InnerExceptions ?? Enumerable.Empty<Exception>());
             if (task.IsCanceled)
             { 
                 try
@@ -59,7 +60,7 @@ namespace Nito.AsyncEx
                 throw new ArgumentNullException(nameof(resultFunc));
 
             if (task.IsFaulted)
-                return @this.TrySetException(task.Exception.InnerExceptions);
+                return @this.TrySetException(task.Exception?.InnerExceptions ?? Enumerable.Empty<Exception>());
             if (task.IsCanceled)
             {
                 try

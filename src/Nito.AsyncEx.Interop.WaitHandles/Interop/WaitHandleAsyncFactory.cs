@@ -65,7 +65,7 @@ namespace Nito.AsyncEx.Interop
         {
             var tcs = new TaskCompletionSource<bool>();
             using (new ThreadPoolRegistration(handle, timeout, tcs))
-            using (token.Register(state => ((TaskCompletionSource<bool>) state).TrySetCanceled(), tcs, useSynchronizationContext: false))
+            using (token.Register(state => ((TaskCompletionSource<bool>?) state)?.TrySetCanceled(), tcs, useSynchronizationContext: false))
                 return await tcs.Task.ConfigureAwait(false);
         }
 
@@ -76,7 +76,7 @@ namespace Nito.AsyncEx.Interop
             public ThreadPoolRegistration(WaitHandle handle, TimeSpan timeout, TaskCompletionSource<bool> tcs)
             {
                 _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(handle,
-                    (state, timedOut) => ((TaskCompletionSource<bool>)state).TrySetResult(!timedOut), tcs,
+                    (state, timedOut) => ((TaskCompletionSource<bool>?)state)?.TrySetResult(!timedOut), tcs,
                     timeout, executeOnlyOnce: true);
             }
 
