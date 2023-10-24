@@ -16,7 +16,7 @@ namespace UnitTests
         public void AsyncContext_StaysOnSameThread()
         {
             var testThread = Thread.CurrentThread.ManagedThreadId;
-            var contextThread = AsyncContext.Run(() => Thread.CurrentThread.ManagedThreadId);
+            var contextThread = AsyncContext.Run(() => Thread.CurrentThread.ManagedThreadId, TimeSpan.FromSeconds(1));
             Assert.Equal(testThread, contextThread);
         }
 
@@ -28,7 +28,7 @@ namespace UnitTests
             {
                 await Task.Yield();
                 resumed = true;
-            }));
+            }),TimeSpan.FromSeconds(1));
             Assert.True(resumed);
         }
 
@@ -45,7 +45,7 @@ namespace UnitTests
                 };
                 asyncVoid();
                 return 13;
-            }));
+            }), TimeSpan.FromSeconds(1));
             Assert.True(resumed);
             Assert.Equal(13, result);
         }
@@ -58,7 +58,7 @@ namespace UnitTests
             {
                 await Task.Yield();
                 resumed = true;
-            });
+            }, TimeSpan.FromSeconds(1));
             Assert.True(resumed);
         }
 
@@ -71,7 +71,7 @@ namespace UnitTests
                 await Task.Yield();
                 resumed = true;
                 return 17;
-            });
+            }, TimeSpan.FromSeconds(1));
             Assert.True(resumed);
             Assert.Equal(17, result);
         }
@@ -137,14 +137,14 @@ namespace UnitTests
         [Fact]
         public void Run_PropagatesException()
         {
-            Action test = () => AsyncContext.Run(() => { throw new NotImplementedException(); });
+            Action test = () => AsyncContext.Run(() => { throw new NotImplementedException(); }, TimeSpan.FromSeconds(1));
             AsyncAssert.Throws<NotImplementedException>(test, allowDerivedTypes: false);
         }
 
         [Fact]
         public void Run_Async_PropagatesException()
         {
-            Action test = () => AsyncContext.Run(async () => { await Task.Yield(); throw new NotImplementedException(); });
+            Action test = () => AsyncContext.Run(async () => { await Task.Yield(); throw new NotImplementedException(); }, TimeSpan.FromSeconds(1));
             AsyncAssert.Throws<NotImplementedException>(test, allowDerivedTypes: false);
         }
 
@@ -158,7 +158,7 @@ namespace UnitTests
                     throw new NotImplementedException();
                 }, null);
                 await Task.Yield();
-            });
+            }, TimeSpan.FromSeconds(1));
             AsyncAssert.Throws<NotImplementedException>(test, allowDerivedTypes: false);
         }
 
@@ -206,7 +206,7 @@ namespace UnitTests
         [Fact]
         public void SynchronizationContext_IsEqualToCopyOfItself()
         {
-            var synchronizationContext1 = AsyncContext.Run(() => SynchronizationContext.Current);
+            var synchronizationContext1 = AsyncContext.Run(() => SynchronizationContext.Current, TimeSpan.FromSeconds(1));
             var synchronizationContext2 = synchronizationContext1.CreateCopy();
             Assert.Equal(synchronizationContext1.GetHashCode(), synchronizationContext2.GetHashCode());
             Assert.True(synchronizationContext1.Equals(synchronizationContext2));
