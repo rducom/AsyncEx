@@ -21,6 +21,7 @@ namespace Nito.AsyncEx
             /// </summary>
             private readonly ConcurrentQueue<Tuple<Task, bool>> _concurrentQueue = new ConcurrentQueue<Tuple<Task, bool>>();
             private int _isCompleted = 0;
+            private int _consumerCount = 0;
             private readonly SemaphoreSlim _monitorRoot = new SemaphoreSlim(0);
 
             /// <summary>
@@ -28,7 +29,6 @@ namespace Nito.AsyncEx
             /// </summary>
             public TaskQueue()
             {
-
             }
 
             /// <summary>
@@ -36,7 +36,8 @@ namespace Nito.AsyncEx
             /// </summary>
             /// <returns>A blocking enumerable that removes items from the queue.</returns>
             public IEnumerable<Tuple<Task, bool>> GetConsumingEnumerable()
-            {
+            { 
+                Interlocked.Increment(ref _consumerCount);
                 while (true)
                 {
                     if (_concurrentQueue.TryDequeue(out var result))
@@ -54,6 +55,7 @@ namespace Nito.AsyncEx
                         if (_isCompleted > 0 && _concurrentQueue.IsEmpty)
                         {
                             // Si la collection est complétée et qu'il n'y a plus d'items, sort de la boucle.
+                            Interlocked.Decrement(ref _consumerCount);
                             yield break;
                         }
                     }
@@ -82,7 +84,7 @@ namespace Nito.AsyncEx
                     return false;
                 }
                 _concurrentQueue.Enqueue(Tuple.Create(item, propagateExceptions));
-                _monitorRoot.Release(1);
+                _monitorRoot.Release(_consumerCount);
                 return true;
             }
 
@@ -92,7 +94,7 @@ namespace Nito.AsyncEx
             public void CompleteAdding()
             {
                 Interlocked.Increment(ref _isCompleted);
-                _monitorRoot.Release(1);
+                _monitorRoot.Release(_consumerCount);
             }
 
             /// <summary>
