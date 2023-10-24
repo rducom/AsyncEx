@@ -87,21 +87,10 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, EventArgs>> FromEvent(Action<EventHandler> subscribe, Action<EventHandler> unsubscribe, CancellationToken cancellationToken, bool unsubscribeOnCapturedContext)
-        => FromAnyEvent<EventHandler, EventArguments<object, EventArgs>>(x => (sender, args) => x(CreateEventArguments(sender, args)), subscribe, unsubscribe, cancellationToken, unsubscribeOnCapturedContext);
+        public static Task<EventArguments<object?, EventArgs>> FromEvent(Action<EventHandler> subscribe, Action<EventHandler> unsubscribe, CancellationToken cancellationToken, bool unsubscribeOnCapturedContext)
+        => FromAnyEvent<EventHandler, EventArguments<object?, EventArgs>>(x => (sender, args) => x(CreateEventArguments(sender, args)), subscribe, unsubscribe, cancellationToken, unsubscribeOnCapturedContext);
 
-        /// <summary>
-        /// Returns a <see cref="Task{T}"/> that completes when a specified event next fires. This overload is for events that are of type <see cref="EventHandler"/>.
-        /// </summary>
-        /// <param name="subscribe">A method that takes a <see cref="EventHandler"/> and subscribes it to the event.</param>
-        /// <param name="unsubscribe">A method that takes a <see cref="EventHandler"/> and unsubscribes it from the event. This method is always invoked in a captured context.</param>
-        /// <param name="cancellationToken">A cancellation token that can be used to cancel the task (and unsubscribe from the event handler).</param>
-        /// <remarks>
-        /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
-        /// </remarks>
-        public static Task<EventArguments<object, EventArgs>> FromEvent(Action<EventHandler> subscribe, Action<EventHandler> unsubscribe, CancellationToken cancellationToken)
-        => FromEvent(subscribe, unsubscribe, cancellationToken, true);
-
+      
         /// <summary>
         /// Returns a <see cref="Task{T}"/> that completes when a specified event next fires. This overload is for events that are of type <see cref="EventHandler"/>.
         /// </summary>
@@ -110,7 +99,7 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, EventArgs>> FromEvent(Action<EventHandler> subscribe, Action<EventHandler> unsubscribe)
+        public static Task<EventArguments<object?, EventArgs>> FromEvent(Action<EventHandler> subscribe, Action<EventHandler> unsubscribe)
         => FromEvent(subscribe, unsubscribe, CancellationToken.None, true);
 
         /// <summary>
@@ -124,8 +113,8 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, TEventArgs>> FromEvent<TEventArgs>(Action<EventHandler<TEventArgs>> subscribe, Action<EventHandler<TEventArgs>> unsubscribe, CancellationToken cancellationToken, bool unsubscribeOnCapturedContext)
-        => FromAnyEvent<EventHandler<TEventArgs>, EventArguments<object, TEventArgs>>(x => (sender, args) => x(CreateEventArguments(sender, args)), subscribe, unsubscribe, cancellationToken, unsubscribeOnCapturedContext);
+        public static Task<EventArguments<object?, TEventArgs>> FromEvent<TEventArgs>(Action<EventHandler<TEventArgs>> subscribe, Action<EventHandler<TEventArgs>> unsubscribe, CancellationToken cancellationToken, bool unsubscribeOnCapturedContext)
+        => FromAnyEvent<EventHandler<TEventArgs>, EventArguments<object?, TEventArgs>>(x => (sender, args) => x(CreateEventArguments(sender, args)), subscribe, unsubscribe, cancellationToken, unsubscribeOnCapturedContext);
 
         /// <summary>
         /// Returns a <see cref="Task{T}"/> that completes when a specified event next fires. This overload is for events that are of type <see cref="EventHandler{TEventArgs}"/>.
@@ -137,7 +126,7 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, TEventArgs>> FromEvent<TEventArgs>(Action<EventHandler<TEventArgs>> subscribe, Action<EventHandler<TEventArgs>> unsubscribe, CancellationToken cancellationToken)
+        public static Task<EventArguments<object?, TEventArgs>> FromEvent<TEventArgs>(Action<EventHandler<TEventArgs>> subscribe, Action<EventHandler<TEventArgs>> unsubscribe, CancellationToken cancellationToken)
         => FromEvent(subscribe, unsubscribe, cancellationToken, true);
 
         /// <summary>
@@ -149,7 +138,7 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, TEventArgs>> FromEvent<TEventArgs>(Action<EventHandler<TEventArgs>> subscribe, Action<EventHandler<TEventArgs>> unsubscribe)
+        public static Task<EventArguments<object?, TEventArgs>> FromEvent<TEventArgs>(Action<EventHandler<TEventArgs>> subscribe, Action<EventHandler<TEventArgs>> unsubscribe)
         => FromEvent(subscribe, unsubscribe, CancellationToken.None, true);
 
         /// <summary>
@@ -165,8 +154,8 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, TEventArgs>> FromEvent<TDelegate, TEventArgs>(Func<EventHandler<TEventArgs>, TDelegate> convert, Action<TDelegate> subscribe, Action<TDelegate> unsubscribe, CancellationToken cancellationToken, bool unsubscribeOnCapturedContext)
-        => FromAnyEvent<TDelegate, EventArguments<object, TEventArgs>>(x => convert((sender, args) => x(CreateEventArguments(sender, args))), subscribe, unsubscribe, cancellationToken, unsubscribeOnCapturedContext);
+        public static Task<EventArguments<object?, TEventArgs>> FromEvent<TDelegate, TEventArgs>(Func<EventHandler<TEventArgs>, TDelegate> convert, Action<TDelegate> subscribe, Action<TDelegate> unsubscribe, CancellationToken cancellationToken, bool unsubscribeOnCapturedContext)
+        => FromAnyEvent<TDelegate, EventArguments<object?, TEventArgs>>(x => convert((sender, args) => x(CreateEventArguments(sender, args))), subscribe, unsubscribe, cancellationToken, unsubscribeOnCapturedContext);
 
         /// <summary>
         /// Returns a <see cref="Task{T}"/> that completes when a specified event next fires. This overload is for events that follow the standard <c>sender, eventArgs</c> pattern but with a custom delegate type.
@@ -180,7 +169,7 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, TEventArgs>> FromEvent<TDelegate, TEventArgs>(Func<EventHandler<TEventArgs>, TDelegate> convert, Action<TDelegate> subscribe, Action<TDelegate> unsubscribe, CancellationToken cancellationToken)
+        public static Task<EventArguments<object?, TEventArgs>> FromEvent<TDelegate, TEventArgs>(Func<EventHandler<TEventArgs>, TDelegate> convert, Action<TDelegate> subscribe, Action<TDelegate> unsubscribe, CancellationToken cancellationToken)
         => FromEvent(convert, subscribe, unsubscribe, cancellationToken, true);
 
         /// <summary>
@@ -194,7 +183,7 @@ namespace Nito.AsyncEx.Interop
         /// <remarks>
         /// <para>Calling this method in a loop is often an anti-pattern, because the event is only subscribed to when this method is invoked, and is unsubscribed from when the task completes. From the time the task is completed until this method is called again, the event may fire and be "lost". If you find yourself needing a loop around this method, consider using Rx or TPL Dataflow instead.</para>
         /// </remarks>
-        public static Task<EventArguments<object, TEventArgs>> FromEvent<TDelegate, TEventArgs>(Func<EventHandler<TEventArgs>, TDelegate> convert, Action<TDelegate> subscribe, Action<TDelegate> unsubscribe)
+        public static Task<EventArguments<object?, TEventArgs>> FromEvent<TDelegate, TEventArgs>(Func<EventHandler<TEventArgs>, TDelegate> convert, Action<TDelegate> subscribe, Action<TDelegate> unsubscribe)
         => FromEvent(convert, subscribe, unsubscribe, CancellationToken.None, true);
 
         /// <summary>

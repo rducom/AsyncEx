@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Nito.AsyncEx
@@ -10,19 +14,21 @@ namespace Nito.AsyncEx
         /// <summary>
         /// A blocking queue.
         /// </summary>
-        private sealed class TaskQueue : IDisposable
+        public sealed class TaskQueue : IDisposable
         {
             /// <summary>
             /// The underlying blocking collection.
             /// </summary>
-            private readonly BlockingCollection<Tuple<Task, bool>> _queue;
+            private readonly ConcurrentQueue<Tuple<Task, bool>> _concurrentQueue = new ConcurrentQueue<Tuple<Task, bool>>();
+            private int _isCompleted = 0;
+            private readonly SemaphoreSlim _monitorRoot = new SemaphoreSlim(0);
+            private const int _millisencondsBeforeTimeoutWait = 50;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="TaskQueue"/> class.
             /// </summary>
             public TaskQueue()
             {
-                _queue = new BlockingCollection<Tuple<Task, bool>>();
             }
 
             /// <summary>
@@ -31,18 +37,28 @@ namespace Nito.AsyncEx
             /// <returns>A blocking enumerable that removes items from the queue.</returns>
             public IEnumerable<Tuple<Task, bool>> GetConsumingEnumerable()
             {
-                return _queue.GetConsumingEnumerable();
+                while (_isCompleted == 0 || !_concurrentQueue.IsEmpty)
+                {
+                    if (_concurrentQueue.TryDequeue(out var result))
+                    {
+                        yield return result;
+                    }
+                    if (_isCompleted == 0 && _concurrentQueue.IsEmpty)
+                    {
+                        // Attend une notification de l'ajout d'un élément ou de la fin d'ajout, timeout à 1 ms pour réduire les attentes infinies.
+                        _monitorRoot.Wait(_millisencondsBeforeTimeoutWait);
+                    }
+                }
             }
 
             /// <summary>
             /// Generates an enumerable of <see cref="Task"/> instances currently queued to the scheduler waiting to be executed.
             /// </summary>
             /// <returns>An enumerable that allows traversal of tasks currently queued to this scheduler.</returns>
-            [System.Diagnostics.DebuggerNonUserCode]
-            internal IEnumerable<Task> GetScheduledTasks()
+            public IEnumerable<Task> GetScheduledTasks()
             {
-                foreach (var item in _queue)
-                    yield return item.Item1;
+                var allItems = _concurrentQueue.ToArray();
+                return allItems.Select(i => i.Item1);
             }
 
             /// <summary>
@@ -52,15 +68,13 @@ namespace Nito.AsyncEx
             /// <param name="propagateExceptions">A value indicating whether exceptions on this task should be propagated out of the main loop.</param>
             public bool TryAdd(Task item, bool propagateExceptions)
             {
-                try
+                if (_isCompleted > 0)
                 {
-                    return _queue.TryAdd(Tuple.Create(item, propagateExceptions));
-                }
-                catch (InvalidOperationException)
-                {
-                    // vexing exception
                     return false;
                 }
+                _concurrentQueue.Enqueue(Tuple.Create(item, propagateExceptions));
+                _monitorRoot.Release(1);
+                return true;
             }
 
             /// <summary>
@@ -68,7 +82,8 @@ namespace Nito.AsyncEx
             /// </summary>
             public void CompleteAdding()
             {
-                _queue.CompleteAdding();
+                Interlocked.Increment(ref _isCompleted);
+                _monitorRoot.Release(1);
             }
 
             /// <summary>
@@ -76,7 +91,6 @@ namespace Nito.AsyncEx
             /// </summary>
             public void Dispose()
             {
-                _queue.Dispose();
             }
         }
     }

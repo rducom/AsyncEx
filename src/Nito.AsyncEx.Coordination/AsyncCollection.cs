@@ -263,7 +263,7 @@ namespace Nito.AsyncEx
                 if (_completed && Empty)
                     throw new InvalidOperationException("Take failed; the producer/consumer collection has completed adding and is empty.");
 
-                if (!_collection.TryTake(out T item))
+                if (!_collection.TryTake(out var item))
                     throw new InvalidOperationException("Take failed; the take from the underlying collection failed.");
 
                 _completedOrNotFull.Notify();

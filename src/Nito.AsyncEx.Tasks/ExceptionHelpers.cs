@@ -8,8 +8,10 @@ internal static class ExceptionHelpers
     /// </summary>
     /// <param name="exception">The exception. May not be <c>null</c>.</param>
     /// <returns>The <see cref="Exception"/> that was passed into this method.</returns>
-    public static Exception PrepareForRethrow(Exception exception)
+    public static Exception PrepareForRethrow(Exception? exception)
     {
+        if (exception == null) 
+            throw new ArgumentNullException(nameof(exception));
         ExceptionDispatchInfo.Capture(exception).Throw();
 
         // The code cannot ever get here. We just return a value to work around a badly-designed API (ExceptionDispatchInfo.Throw):

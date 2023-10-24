@@ -91,6 +91,11 @@ namespace Nito.AsyncEx
         }
 
         /// <summary>
+        /// Default timeout at 10 seconds
+        /// </summary>
+        public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromSeconds(10);
+
+        /// <summary>
         /// Disposes all resources used by this class. This method should NOT be called while <see cref="Execute"/> is executing.
         /// </summary>
         public void Dispose()
@@ -122,16 +127,45 @@ namespace Nito.AsyncEx
         /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. This method will unwrap and propagate errors from the task.
         /// </summary>
         /// <param name="action">The action to execute. May not be <c>null</c>.</param>
-        public static void Run(Action action)
+        /// <param name="timeout">The maximum task duration</param>
+        public static void Run(Action action, TimeSpan timeout)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
             using (var context = new AsyncContext())
             {
-                var task = context._taskFactory.Run(action);
+                var task = context._taskFactory.Run(action).TimeoutAfter(timeout);
                 context.Execute();
                 task.WaitAndUnwrapException();
+            }
+        }
+
+        /// <summary>
+        /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. This method will unwrap and propagate errors from the task.
+        /// </summary>
+        /// <param name="action">The action to execute. May not be <c>null</c>.</param>
+        public static void Run(Action action)
+            => Run(action, DefaultTimeout);
+
+
+
+        /// <summary>
+        /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. Returns the result of the task. This method will unwrap and propagate errors from the task.
+        /// </summary>
+        /// <typeparam name="TResult">The result type of the task.</typeparam>
+        /// <param name="action">The action to execute. May not be <c>null</c>.</param>
+        /// <param name="timeout">The maximum task duration</param>
+        public static TResult Run<TResult>(Func<TResult> action, TimeSpan timeout)
+        {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            using (var context = new AsyncContext())
+            {
+                var task = context._taskFactory.Run(action).TimeoutAfter(timeout);
+                context.Execute();
+                return task.WaitAndUnwrapException();
             }
         }
 
@@ -141,23 +175,14 @@ namespace Nito.AsyncEx
         /// <typeparam name="TResult">The result type of the task.</typeparam>
         /// <param name="action">The action to execute. May not be <c>null</c>.</param>
         public static TResult Run<TResult>(Func<TResult> action)
-        {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
-            using (var context = new AsyncContext())
-            {
-                var task = context._taskFactory.Run(action);
-                context.Execute();
-                return task.WaitAndUnwrapException();
-            }
-        }
+            => Run(action, DefaultTimeout);
 
         /// <summary>
         /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. This method will unwrap and propagate errors from the task proxy.
         /// </summary>
         /// <param name="action">The action to execute. May not be <c>null</c>.</param>
-        public static void Run(Func<Task> action)
+        /// <param name="timeout">The maximum task duration</param>
+        public static void Run(Func<Task> action, TimeSpan timeout)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -166,7 +191,7 @@ namespace Nito.AsyncEx
             using (var context = new AsyncContext())
             {
                 context.OperationStarted();
-                var task = context._taskFactory.Run(action).ContinueWith(t =>
+                var task = context._taskFactory.Run(() => action().TimeoutAfter(timeout)).ContinueWith(t =>
                 {
                     context.OperationCompleted();
                     t.WaitAndUnwrapException();
@@ -178,11 +203,19 @@ namespace Nito.AsyncEx
         }
 
         /// <summary>
+        /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. This method will unwrap and propagate errors from the task proxy.
+        /// </summary>
+        /// <param name="action">The action to execute. May not be <c>null</c>.</param>
+        public static void Run(Func<Task> action)
+            => Run(action, DefaultTimeout);
+
+        /// <summary>
         /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. Returns the result of the task proxy. This method will unwrap and propagate errors from the task proxy.
         /// </summary>
         /// <typeparam name="TResult">The result type of the task.</typeparam>
         /// <param name="action">The action to execute. May not be <c>null</c>.</param>
-        public static TResult Run<TResult>(Func<Task<TResult>> action)
+        /// <param name="timeout">The maximum task duration</param>
+        public static TResult Run<TResult>(Func<Task<TResult>> action, TimeSpan timeout)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -191,7 +224,7 @@ namespace Nito.AsyncEx
             using (var context = new AsyncContext())
             {
                 context.OperationStarted();
-                var task = context._taskFactory.Run(action).ContinueWith(t =>
+                var task = context._taskFactory.Run(() => action().TimeoutAfter(timeout)).ContinueWith(t =>
                 {
                     context.OperationCompleted();
                     return t.WaitAndUnwrapException();
@@ -201,6 +234,14 @@ namespace Nito.AsyncEx
             }
             // ReSharper restore AccessToDisposedClosure
         }
+
+        /// <summary>
+        /// Queues a task for execution, and begins executing all tasks in the queue. This method returns when all tasks have been completed and the outstanding asynchronous operation count is zero. Returns the result of the task proxy. This method will unwrap and propagate errors from the task proxy.
+        /// </summary>
+        /// <typeparam name="TResult">The result type of the task.</typeparam>
+        /// <param name="action">The action to execute. May not be <c>null</c>.</param>
+        public static TResult Run<TResult>(Func<Task<TResult>> action)
+            => Run(action, DefaultTimeout);
 
         /// <summary>
         /// Gets the current <see cref="AsyncContext"/> for this thread, or <c>null</c> if this thread is not currently running in an <see cref="AsyncContext"/>.
@@ -248,6 +289,48 @@ namespace Nito.AsyncEx
             }
 
             public TaskScheduler TaskScheduler => _context._taskScheduler;
+        }
+    }
+
+    internal static class AsyncHelper
+    {
+        internal static async Task<T> TimeoutAfter<T>(this Task<T> task, TimeSpan timeout)
+        {
+            using var cts = new CancellationTokenSource();
+            var delayTask = Task.Delay(timeout, cts.Token);
+
+            Task resultTask = await Task.WhenAny(task, delayTask);
+
+            if (task is { IsFaulted: true, Exception.InnerException: not null })
+            {
+                throw task.Exception.InnerException;
+            }
+
+            if (resultTask == delayTask)
+            {
+                throw new OperationCanceledException($"AsyncContext : Timeout after {timeout:g}");
+            }
+            cts.Cancel();
+            return await task;
+        }
+
+        internal static async Task TimeoutAfter(this Task task, TimeSpan timeout)
+        {
+            using var cts = new CancellationTokenSource();
+            var delayTask = Task.Delay(timeout, cts.Token);
+
+            Task resultTask = await Task.WhenAny(task, delayTask);
+
+            if (task is { IsFaulted: true, Exception.InnerException: not null })
+            {
+                throw task.Exception.InnerException;
+            }
+
+            if (resultTask == delayTask)
+            {
+                throw new OperationCanceledException($"AsyncContext : Timeout after {timeout:g}");
+            }
+            cts.Cancel();
         }
     }
 }
