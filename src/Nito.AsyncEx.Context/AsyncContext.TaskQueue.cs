@@ -43,7 +43,7 @@ namespace Nito.AsyncEx
                     {
                         yield return result;
                     }
-                    if (_concurrentQueue.IsEmpty)
+                    if (_isCompleted == 0 && _concurrentQueue.IsEmpty)
                     {
                         // Attend une notification de l'ajout d'un élément ou de la fin d'ajout, timeout à 1 ms pour réduire les attentes infinies.
                         _monitorRoot.Wait(_millisencondsBeforeTimeoutWait);
